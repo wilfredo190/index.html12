@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generador de Vistas y Likes</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+      text-align: center;
+      padding: 50px;
+    }
+    h1 {
+      color: #4CAF50; /* Verde */
+    }
+    .box {
+      background-color: #f1f1f1;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      margin: 20px;
+      display: inline-block;
+    }
+    .timer {
+      color: red;
+      font-size: 24px;
+    }
+    .button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 15px 32px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .expired {
+      color: red;
+      font-size: 20px;
+      margin-top: 20px;
+    }
+    .password-container {
+      margin-top: 20px;
+    }
+    .password-container input {
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+    .eye-icon {
+      cursor: pointer;
+      margin-left: 10px;
+    }
+    .message {
+      margin-top: 15px;
+      font-size: 14px;
+      color: #555;
+    }
+    .warning {
+      color: #ff0000;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+    .discount-message {
+      color: #4CAF50;
+      font-size: 16px;
+      margin-top: 20px;
+    }
+
+    /* Estilos para la pantalla negra */
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8); /* Fondo negro semitransparente */
+      color: white;
+      display: none; /* Por defecto está oculto */
+      justify-content: center;
+      align-items: center;
+      z-index: 9999; /* Asegura que esté por encima de todo */
+    }
+
+    .overlay .message {
+      font-size: 24px;
+      color: white;
+      text-align: center;
+    }
+
+    .overlay .contact-info {
+      font-size: 18px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h2>Nombre de Usuario: <span id="userName">AVL Oficial</span></h2>
+    <p>Contraseña: <input type="password" id="passwordInput" value="nobita2025" disabled>
+      <span id="eyeIcon" class="eye-icon" onclick="togglePassword()">👁️</span>
+    </p>
+    <p>Expiración de la app: <span id="countdown" class="timer">30 minutos</span></p>
+    <p>Generador de Vistas y Likes</p>
+    
+    <!-- Botón que redirige al enlace de Zefoy -->
+    <a href="https://zefoy.com/#google_vignette" class="button" target="_blank" id="btnStart">Empezar a Generar</a>
+    
+    <div id="expiredMessage" class="expired" style="display: none;">La sesión ha expirado. La página se redirigirá pronto.</div>
+    <div class="message">Una vez expirado el servicio, este dejará de funcionar.</div>
+    
+    <!-- Mensaje de advertencia -->
+    <div class="warning">No comparta la contraseña con nadie, de lo contrario la página dejará de funcionar.</div>
+    
+    <!-- Nuevo mensaje de expiración con descuento -->
+    <div id="discountMessage" class="discount-message" style="display: none;">
+      Esta app ha expirado, por favor vuelve a contratar el servicio para seguir usándola. <br>
+      50% de descuento a usuarios nuevos que deseen contratar por segunda vez.
+    </div>
+    
+    <!-- Contenedor del iframe para cargar Zefoy -->
+    <div class="iframe-container">
+      <iframe id="zefoyFrame" src="https://zefoy.com/#google_vignette"></iframe>
+    </div>
+  </div>
+
+  <!-- Pantalla negra de expiración -->
+  <div class="overlay" id="overlay">
+    <div class="message">
+      La sesión ha expirado. La página no se podrá usar más.
+    </div>
+    <div class="contact-info">
+      Si deseas adquirir más tiempo de servicio, contacta al WhatsApp: <a href="https://wa.me/51915911078" style="color: #4CAF50; text-decoration: none;">+51 915 911 078</a>
+    </div>
+  </div>
+
+  <script>
+    // Variables globales de usuarios y expiraciones
+    var currentUser = "AVL Oficial";
+    var password = "nobita2025";
+    var expirationTime;
+
+    // Verificar si hay un tiempo de expiración guardado
+    var storedExpirationTime = localStorage.getItem('user_expirationTime');
+    if (!storedExpirationTime) {
+      expirationTime = new Date().getTime() + 30 * 60 * 1000; // 30 minutos = 1800 segundos = 1800 * 1000 milisegundos
+      localStorage.setItem('user_expirationTime', expirationTime);
+    } else {
+      expirationTime = parseInt(storedExpirationTime);
+    }
+
+    // Función para actualizar el temporizador y mostrar el tiempo restante
+    function updateTimer() {
+      var remainingTime = expirationTime - new Date().getTime();  // Tiempo restante en milisegundos
+      var minutes = Math.floor(remainingTime / (1000 * 60));  // Calcular minutos restantes
+      var seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);  // Calcular segundos restantes
+
+      // Si el tiempo ha expirado
+      if (remainingTime <= 0) {
+        document.getElementById("expiredMessage").style.display = "block";
+        document.getElementById("discountMessage").style.display = "block";
+        document.getElementById("btnStart").style.display = "none"; // Deshabilitar el botón
+        document.getElementById("countdown").innerHTML = "00:00";
+        clearInterval(timerInterval);  // Detener el temporizador
+
+        // Mostrar pantalla negra
+        document.getElementById("overlay").style.display = "flex";
+        
+        // Evitar cualquier redirección
+        document.getElementById("zefoyFrame").style.display = "none";  // Ocultar iframe de Zefoy si la sesión expiró
+      } else {
+        // Actualizar el temporizador
+        document.getElementById("countdown").innerHTML = (minutes < 10 ? "0" : "") + minutes + ":" + 
+          (seconds < 10 ? "0" : "") + seconds;
+      }
+    }
+
+    // Llamar a la función updateTimer cada segundo
+    var timerInterval = setInterval(updateTimer, 1000);
+
+    // Función para mostrar u ocultar la contraseña
+    function togglePassword() {
+      var passwordInput = document.getElementById("passwordInput");
+      var eyeIcon = document.getElementById("eyeIcon");
+
+      if (passwordInput.type === "password") {
+        passwordInput.type = "text";
+        eyeIcon.textContent = "🙈";  // Cambio de icono a "ocultar"
+      } else {
+        passwordInput.type = "password";
+        eyeIcon.textContent = "👁️";  // Cambio de icono a "ver"
+      }
+    }
+
+    // Función para cambiar de usuario
+    function changeUser(newUser, newPassword, expirationInSeconds) {
+      currentUser = newUser;
+      password = newPassword;
+      expirationTime = new Date().getTime() + expirationInSeconds * 1000; // Establece la expiración en segundos
+      localStorage.setItem('user_expirationTime', expirationTime); // Guardar el tiempo de expiración para este usuario
+      document.getElementById("userName").textContent = newUser; // Mostrar el nuevo usuario
+      document.getElementById("passwordInput").value = newPassword; // Actualizar la contraseña mostrada
+    }
+
+    // Cambiar de usuario al "mili" con 30 minutos de expiración
+    changeUser("mili", "mili20", 30 * 60); // 30 minutos en segundos (30 * 60)
+  </script>
+</body>
+</html>
